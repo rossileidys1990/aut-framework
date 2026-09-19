@@ -1,0 +1,61 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # permite correrlo a mano desde la pestaña Actions
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Correr los tests
+        run: |
+          pytest -v --html=reportes/reporte.html --self-contained-html
+        continue-on-error: true   # <- clave: sin esto, si el test falla, el workflow corta acá y nunca llega al paso del mail
+
+      # Sube el reporte y las capturas de fallo como artefacto descargable,
+      # incluso si los tests fallaron (para poder revisarlos).
+      - name: Subir reporte y capturas de pantalla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-tests
+          path: |
+            reportes/
+            imagenes/
+          retention-days: 15
+
+      - name: Enviar reporte por mail
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Resultado de tests - ${{ job.status }} - ${{ github.repository }}"
+          to: rossileidys@gmail.com
+          from: CI Bot
+          body: |
+            La corrida de tests en ${{ github.repository }} (rama ${{ github.ref_name }}) terminó con estado: ${{ job.status }}.
+            Commit: ${{ github.sha }}
+            Ver detalle completo en: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          attachments: reportes/reporte.html

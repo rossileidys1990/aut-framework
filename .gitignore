@@ -1,0 +1,27 @@
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Cache de Python / pytest
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Reportes y evidencias generadas por los tests (no versionar resultados)
+reportes/*.html
+imagenes/*.png
+imagenes/*.jpg
+
+# Variables de entorno / credenciales
+.env
+.env.local
+
+# Editor
+.vscode/*
+!.vscode/settings.json
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
